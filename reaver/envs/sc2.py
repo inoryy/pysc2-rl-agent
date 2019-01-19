@@ -1,14 +1,26 @@
+import sys
 import gin
 import numpy as np
+from absl import flags
 from pysc2.lib import actions
 from pysc2.lib import features
 from pysc2.lib import protocol
 from pysc2.env.environment import StepType
 from . import Env, Spec, Space
 
+ACTIONS_MINIGAMES, ACTIONS_MINIGAMES_ALL, ACTIONS_ALL = ['minigames', 'minigames_all', 'all']
+
 
 @gin.configurable
 class SC2Env(Env):
+    """
+    'minigames' action set is enough to solve all minigames listed in SC2LE
+    'minigames_all' expands that set with actions that may improve end results, but will drop performance
+    'all' is the full action set, only necessary for generic agent playing full game with all three races
+
+    You can also specify your own action set in the gin config file under SC2Env.action_ids
+    Full list of available actions https://github.com/deepmind/pysc2/blob/master/pysc2/lib/actions.py#L447-L1008
+    """
     def __init__(
         self,
         map_name='MoveToBeacon',
@@ -18,19 +30,34 @@ class SC2Env(Env):
         spatial_dim=16,
         step_mul=8,
         obs_features=None,
-        action_ids=None
+        action_ids=ACTIONS_MINIGAMES
     ):
-        self.render = render
+        super().__init__(map_name, render, reset_done, max_ep_len)
+
         self.step_mul = step_mul
-        self.map_name = map_name
-        self.reset_done = reset_done
-        self.max_ep_len = max_ep_len
         self.spatial_dim = spatial_dim
         self._env = None
 
-        if not action_ids:
-            # Sensible defaults for all minigames
-            action_ids = [0, 1, 2, 3, 4, 6, 7, 12, 13, 140, 168, 261, 274, 331, 332, 333, 334, 451, 452, 453]
+        # sensible action set for all minigames
+        if not action_ids or action_ids in [ACTIONS_MINIGAMES, ACTIONS_MINIGAMES_ALL]:
+            action_ids = [0, 1, 2, 3, 4, 6, 7, 12, 13, 42, 44, 50, 91, 183, 234, 309, 331, 332, 333, 334, 451, 452, 490]
+
+        # some additional actions for minigames (not necessary to solve)
+        if action_ids == ACTIONS_MINIGAMES_ALL:
+            action_ids += [11, 71, 72, 73, 74, 79, 140, 168, 239, 261, 264, 269, 274, 318, 335, 336, 453, 477]
+
+        # full action space, including outdated / unusable to current race / usable only in certain cases
+        if action_ids == ACTIONS_ALL:
+            action_ids = [f.id for f in actions.FUNCTIONS]
+
+        # by default use majority of obs features, except for some that are unnecessary for minigames
+        # e.g. race-specific like creep and shields or redundant like player_id
+        if not obs_features:
+            obs_features = {
+                'screen': ['player_relative', 'selected', 'visibility_map', 'unit_hit_points_ratio', 'unit_density'],
+                'minimap': ['player_relative', 'selected', 'visibility_map', 'camera'],
+                # available actions should always be present and in first position
+                'non-spatial': ['available_actions', 'player']}
 
         self.act_wrapper = ActionWrapper(spatial_dim, action_ids)
         self.obs_wrapper = ObservationWrapper(obs_features, action_ids)
@@ -39,8 +66,12 @@ class SC2Env(Env):
         # importing here to lazy-load
         from pysc2.env import sc2_env
 
+        # fail-safe if executed not as absl app
+        if not flags.FLAGS.is_parsed():
+            flags.FLAGS(sys.argv)
+
         self._env = sc2_env.SC2Env(
-            map_name=self.map_name,
+            map_name=self.id,
             visualize=self.render,
             agent_interface_format=[features.parse_agent_interface_format(
                 feature_screen=self.spatial_dim,
@@ -95,7 +126,7 @@ class SC2Env(Env):
     def make_specs(self):
         # importing here to lazy-load
         from pysc2.env import mock_sc2_env
-        mock_env = mock_sc2_env.SC2TestEnv(map_name=self.map_name, agent_interface_format=[
+        mock_env = mock_sc2_env.SC2TestEnv(map_name=self.id, agent_interface_format=[
             features.parse_agent_interface_format(feature_screen=self.spatial_dim, feature_minimap=self.spatial_dim)])
         self.act_wrapper.make_spec(mock_env.action_spec())
         self.obs_wrapper.make_spec(mock_env.observation_spec())
@@ -105,18 +136,16 @@ class SC2Env(Env):
 class ObservationWrapper:
     def __init__(self, _features=None, action_ids=None):
         self.spec = None
-        if not _features:
-            # available actions should always be present and in first position
-            _features = {
-                'screen': ['player_id', 'player_relative', 'selected', 'unit_hit_points', 'unit_hit_points_ratio',
-                           'unit_density', 'unit_density_aa'],
-                'minimap': ['player_id', 'player_relative', 'selected'],
-                'non-spatial': ['available_actions', 'player']}
         self.features = _features
-        self.feature_masks = {
-            'screen': [i for i, f in enumerate(features.SCREEN_FEATURES._fields) if f in _features['screen']],
-            'minimap': [i for i, f in enumerate(features.MINIMAP_FEATURES._fields) if f in _features['minimap']],}
         self.action_ids = action_ids
+
+        screen_feature_to_idx = {feat: idx for idx, feat in enumerate(features.SCREEN_FEATURES._fields)}
+        minimap_feature_to_idx = {feat: idx for idx, feat in enumerate(features.MINIMAP_FEATURES._fields)}
+
+        self.feature_masks = {
+            'screen': [screen_feature_to_idx[f] for f in _features['screen']],
+            'minimap': [minimap_feature_to_idx[f] for f in _features['minimap']]
+        }
 
     def __call__(self, timestep):
         ts = timestep[0]
@@ -174,10 +203,10 @@ class ActionWrapper:
                 'control_group_id',
                 'select_add',
                 'select_point_act',
-                # 'select_unit_act',
+                'select_unit_act',
                 # 'select_unit_id'
                 'select_worker',
-                # 'build_queue_id',
+                'build_queue_id',
                 # 'unload_id'
             ]
         self.func_ids = action_ids

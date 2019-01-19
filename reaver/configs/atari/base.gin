@@ -1,20 +1,45 @@
-import gin.tf.external_configurables
+# params for generic actor-critic:
+# ==========================================
+build_cnn_nature.value_separate = False
+build_cnn_nature.obs_shift = True
+build_cnn_nature.obs_scale = True
 
-AdvantageActorCriticAgent.model_fn = @build_cnn_nature
-AdvantageActorCriticAgent.policy_cls = @MultiPolicy
+ACAgent.model_fn = @build_cnn_nature
+ACAgent.policy_cls = @MultiPolicy
 
-AdvantageActorCriticAgent.batch_sz = 32
-AdvantageActorCriticAgent.traj_len = 16
+ACAgent.optimizer = @tf.train.AdamOptimizer()
+tf.train.AdamOptimizer.learning_rate = @tf.train.polynomial_decay()
+tf.train.polynomial_decay.decay_steps = 20000
+tf.train.polynomial_decay.learning_rate = 0.00025
+tf.train.polynomial_decay.end_learning_rate = 0.0
+tf.train.polynomial_decay.global_step = @tf.train.get_global_step()
 
-tf.train.AdamOptimizer.learning_rate = 0.005
-AdvantageActorCriticAgent.clip_grads_norm = 1.0
-AdvantageActorCriticAgent.optimizer = @tf.train.AdamOptimizer()
+ACAgent.value_coef = 0.5
+ACAgent.entropy_coef = 0.005
 
-AdvantageActorCriticAgent.discount = 0.99
-AdvantageActorCriticAgent.gae_lambda = 0.0
+ACAgent.batch_sz = 32
+ACAgent.traj_len = 16
 
-AdvantageActorCriticAgent.value_coef = 0.5
-AdvantageActorCriticAgent.entropy_coef = 0.01
+ACAgent.discount = 0.99
+ACAgent.gae_lambda = 0.0
 
-AdvantageActorCriticAgent.bootstrap_terminals = False
-AdvantageActorCriticAgent.normalize_advantages = False
+ACAgent.clip_rewards = 1.0
+ACAgent.clip_grads_norm = 40.0
+
+ACAgent.normalize_advantages = False
+
+# params for A2C:
+# ==========================================
+# ...
+
+# params for PPO:
+# ==========================================
+PPOAgent.batch_sz = 128
+PPOAgent.traj_len = 16
+
+PPOAgent.gae_lambda = 0.95
+
+PPOAgent.n_epochs = 3
+PPOAgent.minibatch_sz = 512
+PPOAgent.clip_ratio = 0.2
+PPOAgent.clip_value = 0.0

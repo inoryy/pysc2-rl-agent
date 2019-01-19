@@ -1,13 +1,11 @@
 import numpy as np
 from . import Env, Spec, Space
+from reaver.envs.atari import AtariPreprocessing
 
 
 class GymEnv(Env):
     def __init__(self, _id='CartPole-v0', render=False, reset_done=True, max_ep_len=None):
-        self.id = _id
-        self.render = render
-        self.reset_done = reset_done
-        self.max_ep_len = max_ep_len if max_ep_len else float('inf')
+        super().__init__(_id, render, reset_done, max_ep_len)
 
         self._env = None
         self.specs = None
@@ -21,12 +19,13 @@ class GymEnv(Env):
 
         try:
             import atari_py
-            from reaver.envs.atari import AtariPreprocessing
         except ImportError:
             return
 
         if any([env_name in self.id.lower() for env_name in atari_py.list_games()]):
             self._env = AtariPreprocessing(self._env.env)
+
+        self.make_specs(running=True)
 
     def step(self, action):
         obs, reward, done, _ = self._env.step(self.wrap_act(action))
@@ -84,14 +83,16 @@ class GymEnv(Env):
             self.make_specs()
         return self.specs['act']
 
-    def make_specs(self):
+    def make_specs(self, running=False):
         render, self.render = self.render, False
-        self.start()
+        if not running:
+            self.start()
         self.specs = {
             'obs': Spec(parse(self._env.observation_space), 'Observation'),
             'act': Spec(parse(self._env.action_space), 'Action')
         }
-        self.stop()
+        if not running:
+            self.stop()
         self.render = render
 
 

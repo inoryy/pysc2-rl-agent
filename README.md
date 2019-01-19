@@ -1,4 +1,4 @@
-# Reaver: StarCraft II Deep Reinforcement Learning Agent
+# Reaver: Modular Deep Reinforcement Learning Framework
 
 [![MoveToBeacon](https://user-images.githubusercontent.com/195271/48730921-66b6fe00-ec44-11e8-9954-9f4891ff9672.gif)](https://youtu.be/gEyBzcPU5-w)
 [![CollectMineralShards](https://user-images.githubusercontent.com/195271/48730941-70d8fc80-ec44-11e8-95ae-acff6f5a9add.gif)](https://youtu.be/gEyBzcPU5-w)
@@ -19,10 +19,9 @@
 
 ## Introduction
 
-Reaver is a deep reinforcement learning agent designed for training on various StarCraft II based tasks.
-Main focus of Reaver is following in DeepMind's footsteps, pushing state-of-the-art of the field through the lens
-of playing a modern video game with human-like interface and limitations. This includes observing visual features similar
-(though not identical) to what a human player would perceive and choosing actions from similar pool of options a human player would have.
+Reaver is a modular deep reinforcement learning framework with a focus on various StarCraft II based tasks, following in DeepMind's footsteps 
+who are pushing state-of-the-art of the field through the lens of playing a modern video game with human-like interface and limitations. 
+This includes observing visual features similar (though not identical) to what a human player would perceive and choosing actions from similar pool of options a human player would have.
 See [StarCraft II: A New Challenge for Reinforcement Learning](https://arxiv.org/abs/1708.04782) article for more details.
 
 Though development is research-driven, the philosophy behind Reaver API is akin to StarCraft II game itself - 
@@ -31,7 +30,13 @@ necessary to train DRL agents by modifying only a small and isolated part of the
 For veteran researchers Reaver offers simple, but performance-optimized codebase with modular architecture: 
 agent, model, and environment are decoupled and can be swapped at will.
 
+While the focus of Reaver is on StarCraft II, it also has full support for other popular environments, notably Atari and MuJoCo. 
+Reaver agent algorithms are validated against reference results, e.g. PPO agent is able to match [
+Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347). Please see [below](#but-wait-theres-more) for more details.
+
 ## Installation
+
+**NB!** As of 25/11/18 you must install **PySC2** [from source](https://github.com/deepmind/pysc2#git) since PIP version is outdated.
 
 ### Requirements
 
@@ -41,7 +46,7 @@ agent, model, and environment are decoupled and can be swapped at will.
 * TensorFlow >= 1.10
 * TensorFlow Probability >= 0.4
 * StarCraft II >= 4.1.2 ([instructions](https://github.com/Blizzard/s2client-proto#downloads))
-* PySC2 > 2.0.1 (**NB**! As of 25/11/18 you must [install from source](https://github.com/deepmind/pysc2#git) since PIP version is outdated)
+* PySC2 > 2.0.1 (**NB!** PIP version is outdated)
 
 #### Optional Extras
 If you would like to use Reaver with other supported environments, you must install relevant packages as well:
@@ -49,16 +54,15 @@ If you would like to use Reaver with other supported environments, you must inst
 * gym >= 0.10.0
 * atari-py >= 0.1.5
 * mujoco-py >= 1.50.0
-  * roboschool >= 1.0(alternative)
-
-It is highly recommended to use Reaver on `Linux OS`, both due to stability and performance considerations.
-To view results with full graphics you can save a replay of the agent on Linux and open it on Windows. This is how the video recording was made.
+  * roboschool >= 1.0 (alternative)
 
 ### PIP Package
 
 Easiest way to install Reaver is through the `PIP` package manager:
  
     pip install reaver
+
+**NB!** PySC2 PIP version is outdated, so you will need to install it from source as described above.
 
 **NB!** Reaver specifies `TensorFlow` only as a soft dependency and it will not be installed by default. This is to avoid
 `tensorflow` overwriting `tensorflow-gpu` and vise-versa. You can install `tensorflow` along with Reaver by specifying either
@@ -88,6 +92,15 @@ means that various optimization flags are disabled by default. For example, if y
 it is highly recommended to use a custom built TensorFlow instead. If building from source is not an option for you,
 then [this repository](https://github.com/inoryy/tensorflow-optimized-wheels) might be useful - it contains newest `TensorFlow`
 releases built for newest CUDA / CuDNN versions, which often come with performance boosts even for older GPUs.
+
+### Windows
+
+Please see the [wiki](https://github.com/inoryy/reaver-pysc2/wiki/Windows) page for detailed instructions on setting up Reaver on Windows.
+
+However, if possible please consider using `Linux OS` instead - due to performance and stability considerations.
+If you would like to see your agent perform with full graphics enabled you can save a replay of the agent on Linux and open it on Windows.
+This is how the video recording listed below was made.
+
 
 ## Quick Start
 
@@ -148,7 +161,7 @@ This is a valid and most likely only reasonable approach for large-scale distrib
 However, for a typical researcher or hobbyist a much more common scenario is having access only to a 
 single machine environment, whether it is a laptop or a node on a HPC cluster. Reaver is optimized specifically 
 for this case by making use of shared memory in a lock-free manner. This approach nets significant performance
-boost of up to **3x speed-up** in StarCraft II sampling rate (and up to 100x speedup in general case),
+boost of up to **1.5x speed-up** in StarCraft II sampling rate (and up to 100x speedup in general case),
 being bottle-necked almost exclusively by GPU input/output pipeline.
 
 ### Extensibility
@@ -271,20 +284,22 @@ You can use pre-trained weights by appending `--experiment` flag to `reaver.run`
 
     python reaver.run --map <map_name> --experiment <map_name>_reaver --test 2> stderr.log
 
-Tensorboard logs are available if you launch `tensorboard --logidr=results/summaries`.
+Tensorboard logs are available if you launch `tensorboard --logidr=results/summaries`.  
+You can also view them [directly online](https://boards.aughie.org/board/HWi4xmuvuOSuw09QBfyDD-oNF1U) via [Aughie Boards](https://boards.aughie.org/).
 
 ## Roadmap
 
-In this section you can get a birdseye overview of my high level plans for Reaver.
+In this section you can get a birdseye overview of my plans for the project in no particular order. You can also follow 
+what I'm currently working on in the [projects tab](https://github.com/inoryy/reaver-pysc2/projects). 
 Any help with development is of course highly appreciated, assuming contributed codebase license matches (MIT).
 
 * [ ] Documentation
   * [ ] Codebase documentation
   * [ ] Extending to custom environments
   * [ ] Extending to custom agents
-  * [ ] Setup on [Google Colab](https://colab.research.google.com)
+  * [x] Setup on [Google Colab](https://colab.research.google.com)
 * [ ] Unit tests
-  * [ ] For critical features such as advantage estimation
+  * [x] For critical features such as advantage estimation
   * [ ] General basic convergence guarantees of agents / models combinations
 * [ ] LSTM support
   * [ ] for simpler gym environments
@@ -330,7 +345,7 @@ If you encounter a codebase related problem then please open a ticket on GitHub 
 If you have more general questions or simply seeking advice feel free to send me an email.
 
 I am also a proud member of an active and friendly [SC2AI](http://sc2ai.net) online community, 
-we mostly use [Discord](https://discord.gg/UBCjm3) for communication. People of all backgrounds and levels of expertise are welcome to join!
+we mostly use [Discord](https://discordapp.com/invite/Emm5Ztz) for communication. People of all backgrounds and levels of expertise are welcome to join!
 
 ## Citing
 

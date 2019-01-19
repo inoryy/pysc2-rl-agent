@@ -12,7 +12,7 @@ class Experiment:
                 name = max(experiments, key=lambda p: os.path.getmtime(results_dir+'/'+p))
                 name = '_'.join(name.split('_')[2:])
             else:
-                name = dt.now().strftime("%y-%m-%d_%H-%M")
+                name = dt.now().strftime("%y-%m-%d_%H-%M-%S")
 
         self.name = name
         self.restore = restore
@@ -51,22 +51,8 @@ class Experiment:
         return '%s/summaries/%s' % (self.results_dir, self.full_name)
 
     def save_gin_config(self):
-        config_str = gin.operative_config_str()
-
-        if 'AdvantageActorCriticAgent.batch_sz' not in config_str:
-            # gin ignores batch size since it's passed manually from args
-            # as a hacky workaround - insert it manually as the first param
-            batch_sz = gin.query_parameter('AdvantageActorCriticAgent.batch_sz')
-            config_lines = config_str.split('\n')
-            first_ac_line = 0
-            for first_ac_line in range(0, len(config_lines)):
-                if 'AdvantageActorCriticAgent.' in config_lines[first_ac_line]:
-                    break
-            config_lines.insert(first_ac_line, 'AdvantageActorCriticAgent.batch_sz = ' + str(batch_sz))
-            config_str = '\n'.join(config_lines)
-
         with open(self.config_path, 'w') as cfg_file:
-            cfg_file.write(config_str)
+            cfg_file.write(gin.operative_config_str())
 
     def save_model_summary(self, model):
         with open(self.path + '/' + 'model_summary.txt', 'w') as fl:
