@@ -27,8 +27,8 @@ class SC2Env(Env):
         render=False,
         reset_done=True,
         max_ep_len=None,
-        spatial_dim=16,
-        step_mul=8,
+        spatial_dim=32, #bitmap size
+        step_mul=24, #frame rate
         obs_features=None,
         action_ids=ACTIONS_MINIGAMES
     ):
@@ -239,6 +239,7 @@ class ActionWrapper:
                 args.append([defaults[arg_name]])
 
         return [actions.FunctionCall(fn_id, args)]
+        #renvoie fn id et arg pour le fn_id utilisés
 
     def make_spec(self, spec):
         spec = spec[0]
@@ -270,6 +271,7 @@ class SC2FuncIdSpace(Space):
         for fn_id in func_ids:
             fn_id_args = [arg_type.name for arg_type in actions.FUNCTIONS[fn_id].args]
             self.args_mask.append([arg in fn_id_args for arg in args])
+            #ajoute arg à args_mask si arg est dans fn_id_args. Vecteur de type [[False, ...],...,[True,False..]]
 
 
 def get_spatial_dims(feat_names, feats):

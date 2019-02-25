@@ -11,6 +11,10 @@ class Env(ABC):
 
     Note: observation / action specs contain a list of spaces,
           this is implicitly assumed across all Reaver components
+
+
+    Abstract est un cahier des charges, si à l'intérieur de SC2Env il n'y a pas de définition des fonctions start, step etc, il y aura un message d'erreur
+    SC2Env hérite de Env, Env étant la class cahier des charges définie ici.
     """
     def __init__(self, _id: str, render=False, reset_done=True, max_ep_len=None):
         self.id = _id
