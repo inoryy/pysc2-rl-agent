@@ -28,7 +28,7 @@ class SC2Env(Env):
         reset_done=True,
         max_ep_len=None,
         spatial_dim=32, #bitmap size
-        step_mul=24, #frame rate
+        step_mul=8, #frame rate
         obs_features=None,
         action_ids=ACTIONS_MINIGAMES
     ):

@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.initializers import VarianceScaling
-from tensorflow.keras.layers import Input, Concatenate, Dense, Embedding, Conv2D, Flatten, Lambda
+from tensorflow.keras.layers import Input, Concatenate, Dense, Embedding, Conv2D, Flatten, Lambda, LSTM
 from reaver.models.base.layers import Squeeze, Split, Transpose, Log, Broadcast2D
 
 
@@ -29,12 +29,25 @@ def build_fully_conv(obs_spec, act_spec, data_format='channels_first', broadcast
     value = Squeeze(axis=-1)(value)
 
     logits = []
+    lstm = LSTM(1024)
     for space in act_spec:
-        if space.is_spatial():
-            logits.append(Conv2D(1, 1, **conv_cfg(data_format, scale=0.1))(state))
-            logits[-1] = Flatten()(logits[-1])
-        else:
-            logits.append(Dense(space.size(), **dense_cfg(scale=0.1))(fc))
+        print('space: {}, spatial: {}'.format(space, space.is_spatial()))
+        with tf.name_scope(space.name):
+            if space.is_spatial():
+                logits.append(Conv2D(1, 1, **conv_cfg(data_format, scale=0.1))(state))
+                logits[-1] = Flatten()(logits[-1])
+                #print(logits[-1].shape)
+                from tensorflow.keras.layers import Reshape
+                logits[-1] = Reshape((1,logits[-1].shape[1]))(logits[-1])
+                #logits[-1] = Dense(1024, **dense_cfg(scale=0.1))(logits[-1])
+
+                #state = lstm.zero_state(1, dtype=tf.float32)
+                #output, state = lstm(logits[-1], state)
+                #logits[-1]=output
+                logits[-1] = LSTM(1024)(logits[-1])
+                print(logits[-1].shape)
+            else:
+                logits.append(Dense(space.size(), **dense_cfg(scale=0.1))(fc))
 
     mask_actions = Lambda(
         lambda x: tf.where(non_spatial_inputs[0] > 0, x, -1000 * tf.ones_like(x)),
