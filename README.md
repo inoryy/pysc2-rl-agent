@@ -147,6 +147,14 @@ After Reaver has finished training, you can look at how it performs by appending
 python -m reaver.run --env MoveToBeacon --agent a2c --test --render 2> stderr.log
 ```
 
+To record replays of the training you can use `--replay` and `--replay_dir`. The `replay` flag needs an integger `n`, after `n` episodes a replay will be saved. The `replay_dir` flag will need a `path` where do you want to save the replay, `Linux OS` will save on ~/StarCraftII/Replays/ + `path(replay_dir)` and `Windows OS` will save on `path(replay_dir)`.
+
+```bash
+python -m reaver.run --env MoveToBeacon --agent a2c --test --render --replay 10 --replay_dir a2c_agent_mtb_replay 2> stderr.log
+```
+**NB!** If you want to use the flag `replay` you will need to install manually it from source as described above.
+
+
 ### Google Colab
 
 A companion [Google Colab notebook](https://colab.research.google.com/drive/1DvyCUdymqgjk85FB5DrTtAwTFbI494x7) 
